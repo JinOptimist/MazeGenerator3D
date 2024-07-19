@@ -1,11 +1,14 @@
 ﻿using MazeGenerator.Models;
 using MazeGenerator.Models.GenerationModels;
+using System.Drawing;
+using System.Numerics;
+using System.Reflection.Metadata;
 
 namespace MazeGenerator
 {
     public class Generator
     {
-        private Maze _maze;
+        private MazeForGeneration _maze;
         private List<CellForGeneration> _cells = new();
         private Random _random;
 
@@ -81,19 +84,24 @@ namespace MazeGenerator
             var cellsOnTheSameLevel = GetNearCellsOnTheSameLevel(miner.CurrentCell)
                 .Where(x => x.State == BuildingState.New);
 
-            var canStepUp = _cells
-                .FirstOrDefault(cell =>
-                    cell.X == miner.X
-                    && cell.Y == miner.Y
-                    && cell.Z == miner.Z + 1)
-                ?.State == BuildingState.New;
+
             // If cell over the Miner is new, we can break the floor on it
-            if (canStepUp)
-            {
+            var cellsFromWhichMinerCanStepUp = cellsOnTheSameLevel
+                .Select(cellOnTheSameLevel =>
+                    _cells.FirstOrDefault(cell =>
+                       cell.X == cellOnTheSameLevel.X
+                       && cell.Y == cellOnTheSameLevel.Y
+                       && cell.Z == cellOnTheSameLevel.Z + 1))
+                .Where(x => x.State == BuildingState.New);
 
-            }
+            //if (canStepUp)
+            //{
 
-            return null;
+            //}
+
+
+
+            return cellsOnTheSameLevel.Union(cellsOneFloorAbove).Union(cellsOneFloorBelow);
         }
 
         private IEnumerable<CellForGeneration> GetNearCellsOnTheSameLevel(CellForGeneration centralCell)
@@ -109,7 +117,22 @@ namespace MazeGenerator
                         && cell.Z == centralCell.Z);
         }
 
+        private IEnumerable<Vector3> AvailableDirectionToStep(CellForGeneration centralCell)
+        {
+            _maze[1, 3, 2];
+
+
+            if (_maze
+                .FirstOrDefault(cell =>
+                    cell.X == centralCell.X - 1
+                    && cell.Y == centralCell.Y
+                    && cell.Z == centralCell.Z)?.State == BuildingState.New)
+            {
+                yield return new Vector3(0, 1, 0);
+            }
+        }
+
         private Wall AllWalls()
-            => Wall.North | Wall.East | Wall.South | Wall.West | Wall.Roof | Wall.Floor;
+                => Wall.North | Wall.East | Wall.South | Wall.West | Wall.Roof | Wall.Floor;
     }
 }

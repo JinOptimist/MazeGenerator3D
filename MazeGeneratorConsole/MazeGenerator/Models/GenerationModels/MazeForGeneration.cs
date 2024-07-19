@@ -19,11 +19,14 @@
 
         public List<CellForGeneration> CellsForGeneration { get; set; } = new();
 
-        public Cell this[int x,int y, int z]
+        public Cell? this[int x,int y, int z]
         {
             get
             {
-                return _
+                return CellsForGeneration.FirstOrDefault(cell =>
+                    cell.X == x
+                    && cell.Y == y
+                    && cell.Z == z);
             }
         }
     }

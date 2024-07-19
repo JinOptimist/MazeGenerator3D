@@ -2,7 +2,7 @@
 {
     public class Miner
     {
-        public Cell CurrentCell { get; set; }
+        public CellForGeneration CurrentCell { get; set; }
         public Direction LastStepDirection { get; set; }
 
         public int X => CurrentCell.X;
