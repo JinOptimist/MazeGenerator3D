@@ -17,13 +17,24 @@
         /// </summary>
         public int Height { get; set; }
 
-        public List<CellForGeneration> CellsForGeneration { get; set; } = new();
+        public List<CellForGeneration> Cells { get; set; } = new();
 
-        public Cell? this[int x,int y, int z]
+        public CellForGeneration? this[int x,int y, int z]
         {
             get
             {
-                return CellsForGeneration.FirstOrDefault(cell =>
+                return Cells.FirstOrDefault(cell =>
+                    cell.X == x
+                    && cell.Y == y
+                    && cell.Z == z);
+            }
+        }
+
+        public CellForGeneration? this[float x, float y, float z]
+        {
+            get
+            {
+                return Cells.FirstOrDefault(cell =>
                     cell.X == x
                     && cell.Y == y
                     && cell.Z == z);

@@ -2,7 +2,7 @@
 {
     public static class RandomExtention
     {
-        public static T GetRandomFrom<T>(this  Random random, List<T> list)
+        public static T GetRandomFrom<T>(this Random random, List<T> list)
         {
             var index = random.Next(list.Count);
             return list[index];

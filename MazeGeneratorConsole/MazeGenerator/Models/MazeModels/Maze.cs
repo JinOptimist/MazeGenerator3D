@@ -1,4 +1,6 @@
-﻿namespace MazeGenerator.Models
+﻿using MazeGenerator.Models.GenerationModels;
+
+namespace MazeGenerator.Models
 {
     public class Maze
     {
@@ -17,5 +19,16 @@
         /// </summary>
         public int Height { get; set; }
         public virtual List<Cell> Cells { get; set; } = new();
+
+        public Cell? this[int x, int y, int z]
+        {
+            get
+            {
+                return Cells.FirstOrDefault(cell =>
+                    cell.X == x
+                    && cell.Y == y
+                    && cell.Z == z);
+            }
+        }
     }
 }
