@@ -1,5 +1,6 @@
 ﻿using MazeGenerator.Models;
 using MazeGenerator.Models.GenerationModels;
+using MazeGenerator.Models.MazeModels;
 using System.Drawing;
 using System.Numerics;
 using System.Reflection.Metadata;
@@ -35,7 +36,7 @@ namespace MazeGenerator
             };
 
             BuildFullWalls();
-            BuildCorridors(config.IsLongCorridors);
+            BuildCorridors();
 
             // Build Cell base on CellForGeneration for maze.Cells
             var maze = new Maze
@@ -50,6 +51,7 @@ namespace MazeGenerator
                         Y = x.Y,
                         Z = x.Z,
                         Wall = x.Wall,
+                        InnerPart = x.InnerPart,
                     })
                 .ToList()
             };
@@ -78,7 +80,7 @@ namespace MazeGenerator
             }
         }
 
-        private void BuildCorridors(bool isLongCorridors)
+        private void BuildCorridors()
         {
             var miner = new Miner();
             var startingCell = _random.GetRandomFrom(_maze.Cells);
@@ -106,7 +108,7 @@ namespace MazeGenerator
                 }
                 // TODO use a weight for each option when call random
                 var cellToStep = _random.GetRandomFrom(cellsAvailableToStep);
-                var movmentVector = miner.CurrentCell - cellToStep;
+                var movmentVector = cellToStep - miner.CurrentCell;
                 // if z == 0 it means that miner moving on the same level
                 if (movmentVector.Z == 0)
                 {
@@ -115,11 +117,77 @@ namespace MazeGenerator
                 }
                 else // if z != 0 it means that we a build a stair
                 {
+                    /// Scheme 1 of the breaken walls to the stair
+                    /// _ 2→3
+                    ///   ↑
+                    /// @→1 _
+                    /// Stair will be on firt cell (cell1)
 
+                    /// Scheme 2 of the breaken walls to the stair
+                    /// @→1 _
+                    ///   ↓
+                    /// _ 2→3
+                    /// Stair will be on second cell (cell2)
 
+                    var vectorToTheCell1 = new Vector3(
+                        movmentVector.X / 2,
+                        movmentVector.Y / 2,
+                        0);
+                    var cell1 = GetCellByDirection(miner.CurrentCell, vectorToTheCell1)!;
+                    BreakWallsBetweenCells(miner.CurrentCell, cell1);
+                    cell1.State = BuildingState.Finished;
+                    // Scheme 1. Step up. Build stair on cell1
+                    if (movmentVector.Z > 0)
+                    {
+                        cell1.InnerPart = ChooseStairByVector(vectorToTheCell1);
+                    }
+
+                    var vectorToTheCell2 = new Vector3(
+                        movmentVector.X / 2,
+                        movmentVector.Y / 2,
+                        movmentVector.Z);
+                    var cell2 = GetCellByDirection(miner.CurrentCell, vectorToTheCell2)!;
+                    BreakWallsBetweenCells(cell1, cell2);
+                    cell2.State = BuildingState.Finished;
+                    // Scheme 2. Step down. Build stair on cell2
+                    if (movmentVector.Z < 0)
+                    {
+                        // To build stair down we build stair to up but in reverse direction
+                        var reverseVectorToCell1 = -vectorToTheCell1;
+                        cell2.InnerPart = ChooseStairByVector(reverseVectorToCell1);
+                    }
+
+                    var cell3 = GetCellByDirection(miner.CurrentCell, movmentVector)!;
+                    BreakWallsBetweenCells(cell2, cell3);
+                    cell3.State = BuildingState.Visited;
+
+                    miner.CurrentCell = cell3;
                 }
             }
 
+        }
+
+        private InnerPart ChooseStairByVector(Vector3 vectorToTheCell1)
+        {
+            if (vectorToTheCell1.X == 1)
+            {
+                return InnerPart.StairFromWestToEast;
+            }
+            if (vectorToTheCell1.X == -1)
+            {
+                return InnerPart.StairFromEastToWest;
+            }
+
+            if (vectorToTheCell1.Y == 1)
+            {
+                return InnerPart.StairFromSouthToNorth;
+            }
+            if (vectorToTheCell1.Y == -1)
+            {
+                return InnerPart.StairFromNorthToSouth;
+            }
+
+            throw new Exception("Unexpected vector to building stairs");
         }
 
         private void BreakWallsBetweenCells(CellForGeneration currentCell, CellForGeneration cellToStep)
@@ -191,6 +259,14 @@ namespace MazeGenerator
             }
         }
 
+        /// <summary>
+        /// Ceck can we add cell on the level above to available cells.
+        /// If yes, return the cell
+        /// If no, return the null
+        /// </summary>
+        /// <param name="centralCell"></param>
+        /// <param name="vectorToCell1"></param>
+        /// <returns></returns>
         private CellForGeneration? GetCellOnTheLevelBelow(CellForGeneration centralCell, Vector3 vectorToCell1)
         {
             /// @→1 _

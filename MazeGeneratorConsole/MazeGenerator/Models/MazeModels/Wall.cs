@@ -1,4 +1,4 @@
-﻿namespace MazeGenerator.Models
+﻿namespace MazeGenerator.Models.MazeModels
 {
     [Flags]
     public enum Wall

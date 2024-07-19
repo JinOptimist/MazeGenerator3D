@@ -1,6 +1,4 @@
-﻿using MazeGenerator.Models.GenerationModels;
-
-namespace MazeGenerator.Models
+﻿namespace MazeGenerator.Models.MazeModels
 {
     public class Maze
     {
