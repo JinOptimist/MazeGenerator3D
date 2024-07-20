@@ -9,6 +9,8 @@ namespace MazeGeneratorConsole
         public const char WEST = '|';
         public const char EAST = '|';
         public const char STAIR = '^';
+        public const char START = 'S'; 
+        public const char EXIT = 'X';
         public const char DOT = '.';
 
         public const int MARGIN = 2;
@@ -107,7 +109,23 @@ namespace MazeGeneratorConsole
                     Console.SetCursorPosition(xMargin + 1, yMargin);
                     if (cell.InnerPart != InnerPart.None)
                     {
-                        Console.Write(STAIR);
+                        switch (cell.InnerPart)
+                        {
+                            case InnerPart.StairFromSouthToNorth:
+                            case InnerPart.StairFromNorthToSouth:
+                            case InnerPart.StairFromWestToEast:
+                            case InnerPart.StairFromEastToWest:
+                                Console.Write(STAIR);
+                                break;
+                            case InnerPart.Start:
+                                Console.Write(START);
+                                break;
+                            case InnerPart.Exit:
+                                Console.Write(EXIT);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     else if (walls.HasFlag(Wall.South))
                     {

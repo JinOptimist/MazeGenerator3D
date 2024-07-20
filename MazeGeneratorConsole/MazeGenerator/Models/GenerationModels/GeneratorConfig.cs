@@ -20,6 +20,7 @@ namespace MazeGenerator
         public int Height { get; set; }
 
         public Vector3? StartPoint { get; set; }
+        public Vector3? EndPoint { get; set; }
 
         public bool IsLongCorridors { get; set; }
         public int RandomSeed { get; set; }

@@ -14,15 +14,17 @@ namespace MazeGenerator
         private Random _random;
 
         public Maze Generate(int length = 6, int width = 7, int height = 5,
-            Vector3? startPoint = null, int? seed = null)
+            Vector3? startPoint = null,
+            Vector3? endPoint = null,
+            int? seed = null)
         {
-
             var defaultGeneratorConfig = new GeneratorConfig
             {
                 Legnth = length,
                 Width = width,
                 Height = height,
                 StartPoint = startPoint,
+                EndPoint = endPoint,
                 RandomSeed = seed ?? DateTime.Now.Millisecond,
             };
 
@@ -41,6 +43,7 @@ namespace MazeGenerator
 
             BuildFullWalls();
             BuildCorridors(config.StartPoint);
+            BuildExit(config.EndPoint);
 
             // Build Cell base on CellForGeneration for maze.Cells
             var maze = new Maze
@@ -60,6 +63,20 @@ namespace MazeGenerator
                 .ToList()
             };
             return maze;
+        }
+
+        private void BuildExit(Vector3? endPoint)
+        {
+            var allEmptyCells = _maze.Cells
+                .Where(x =>
+                    x.InnerPart == InnerPart.None
+                    && x.State == BuildingState.Finished)
+                .ToList();
+
+            var endCell = endPoint.HasValue
+                ? _maze[endPoint.Value.X, endPoint.Value.Y, endPoint.Value.Z]
+                : _random.GetRandomFrom(allEmptyCells);
+            endCell.InnerPart = InnerPart.Exit;
         }
 
         private void BuildFullWalls()
@@ -90,6 +107,8 @@ namespace MazeGenerator
             var startingCell = startPoint.HasValue
                 ? _maze[startPoint.Value.X, startPoint.Value.Y, startPoint.Value.Z]
                 : _random.GetRandomFrom(_maze.Cells);
+            startingCell.InnerPart = InnerPart.Start;
+
             miner.CurrentCell = startingCell;
             miner.CurrentCell.State = BuildingState.Visited;
 

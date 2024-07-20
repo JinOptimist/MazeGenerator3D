@@ -19,5 +19,8 @@
         /// X axe -1
         /// </summary>
         StairFromEastToWest,
+        
+        Start,
+        Exit,
     }
 }
