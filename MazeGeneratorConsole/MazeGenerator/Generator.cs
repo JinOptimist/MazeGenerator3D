@@ -1,9 +1,10 @@
-﻿using MazeGenerator.Models;
-using MazeGenerator.Models.GenerationModels;
+﻿using MazeGenerator.Models.GenerationModels;
 using MazeGenerator.Models.MazeModels;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Numerics;
-using System.Reflection.Metadata;
 
 namespace MazeGenerator
 {
@@ -12,13 +13,16 @@ namespace MazeGenerator
         private MazeForGeneration _maze;
         private Random _random;
 
-        public Maze Generate(int length = 6, int width = 7, int height = 5, int? seed = null)
+        public Maze Generate(int length = 6, int width = 7, int height = 5,
+            Vector3? startPoint = null, int? seed = null)
         {
+
             var defaultGeneratorConfig = new GeneratorConfig
             {
                 Legnth = length,
                 Width = width,
                 Height = height,
+                StartPoint = startPoint,
                 RandomSeed = seed ?? DateTime.Now.Millisecond,
             };
 
@@ -36,12 +40,12 @@ namespace MazeGenerator
             };
 
             BuildFullWalls();
-            BuildCorridors();
+            BuildCorridors(config.StartPoint);
 
             // Build Cell base on CellForGeneration for maze.Cells
             var maze = new Maze
             {
-                Legnth = _maze.Legnth,
+                Length = _maze.Legnth,
                 Width = _maze.Width,
                 Height = _maze.Height,
                 Cells = _maze.Cells.Select(x =>
@@ -80,20 +84,21 @@ namespace MazeGenerator
             }
         }
 
-        private void BuildCorridors()
+        private void BuildCorridors(Vector3? startPoint)
         {
             var miner = new Miner();
-            var startingCell = _random.GetRandomFrom(_maze.Cells);
+            var startingCell = startPoint.HasValue
+                ? _maze[startPoint.Value.X, startPoint.Value.Y, startPoint.Value.Z]
+                : _random.GetRandomFrom(_maze.Cells);
             miner.CurrentCell = startingCell;
             miner.CurrentCell.State = BuildingState.Visited;
-            //miner.LastStepDirection = Direction.North;
 
             while (_maze.Cells.Any(x => x.State == BuildingState.Visited))
             {
                 miner.CurrentCell.State = BuildingState.Visited;
                 var cellsAvailableToStep = GetCellsAvailableToStep(miner.CurrentCell)
                     .ToList();
-                if (cellsAvailableToStep.Count == 0)
+                if (cellsAvailableToStep.Count() == 0)
                 {
                     miner.CurrentCell.State = BuildingState.Finished;
                     var visitedCells = _maze.Cells

@@ -21,7 +21,7 @@ namespace MazeGeneratorConsole
 
             for (int y = 0; y < maze.Width; y++)
             {
-                for (int x = 0; x < maze.Legnth; x++)
+                for (int x = 0; x < maze.Length; x++)
                 {
                     var xMargin = x * 3 + MARGIN;
                     var yMargin = (maze.Width - y - 1) * 3 + MARGIN;
@@ -59,7 +59,7 @@ namespace MazeGeneratorConsole
                 }
             }
 
-            Console.SetCursorPosition(maze.Legnth * 3 + MARGIN * 2, maze.Width * 3 + MARGIN * 2);
+            Console.SetCursorPosition(maze.Length * 3 + MARGIN * 2, maze.Width * 3 + MARGIN * 2);
         }
 
         public void ClearDraw(Maze maze)
@@ -72,13 +72,13 @@ namespace MazeGeneratorConsole
 
         private void DrawOneLevel(Maze maze, int level)
         {
-            var oneLevelHeightCells = maze.Height + MARGIN;
+            var oneLevelHeightCells = maze.Width + MARGIN;
             var levelMargin = level * oneLevelHeightCells;
             Console.SetCursorPosition(0, MARGIN - 2 + levelMargin);
             Console.Write($"Level - {level}");
 
             //Draw upper border
-            for (int x = 0; x < maze.Legnth * 2; x++)
+            for (int x = 0; x < maze.Length * 2; x++)
             {
                 var yMargin = MARGIN - 1 + levelMargin;
                 Console.SetCursorPosition(MARGIN + x, yMargin);
@@ -88,7 +88,7 @@ namespace MazeGeneratorConsole
             //Draw easten border
             for (int y = 0; y < maze.Width; y++)
             {
-                var xMargin = maze.Width * 2 + MARGIN;
+                var xMargin = maze.Length * 2 + MARGIN;
                 var yMargin = (maze.Width - y - 1) + MARGIN + levelMargin;
                 Console.SetCursorPosition(xMargin, yMargin);
                 Console.Write(WEST);
@@ -97,7 +97,7 @@ namespace MazeGeneratorConsole
             // Draw cells
             for (int y = 0; y < maze.Width; y++)
             {
-                for (int x = 0; x < maze.Legnth; x++)
+                for (int x = 0; x < maze.Length; x++)
                 {
                     var xMargin = x * 2 + MARGIN;
                     var yMargin = (maze.Width - y - 1) + MARGIN + levelMargin;
@@ -126,7 +126,7 @@ namespace MazeGeneratorConsole
                 }
             }
 
-            Console.SetCursorPosition(maze.Legnth * 2 + MARGIN, maze.Width + MARGIN + levelMargin);
+            Console.SetCursorPosition(maze.Length * 2 + MARGIN, maze.Width + MARGIN + levelMargin);
         }
     }
 }

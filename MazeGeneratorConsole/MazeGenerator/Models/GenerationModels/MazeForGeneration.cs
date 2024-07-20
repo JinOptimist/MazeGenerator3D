@@ -1,4 +1,7 @@
-﻿namespace MazeGenerator.Models.GenerationModels
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace MazeGenerator.Models.GenerationModels
 {
     public class MazeForGeneration
     {
@@ -17,9 +20,9 @@
         /// </summary>
         public int Height { get; set; }
 
-        public List<CellForGeneration> Cells { get; set; } = new();
+        public List<CellForGeneration> Cells { get; set; } = new List<CellForGeneration>();
 
-        public CellForGeneration? this[int x,int y, int z]
+        public CellForGeneration this[int x,int y, int z]
         {
             get
             {
@@ -30,7 +33,7 @@
             }
         }
 
-        public CellForGeneration? this[float x, float y, float z]
+        public CellForGeneration this[float x, float y, float z]
         {
             get
             {

@@ -1,11 +1,14 @@
-﻿namespace MazeGenerator.Models.MazeModels
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace MazeGenerator.Models.MazeModels
 {
     public class Maze
     {
         /// <summary>
         /// X-axe
         /// </summary>
-        public int Legnth { get; set; }
+        public int Length { get; set; }
 
         /// <summary>
         /// Y-axe
@@ -16,7 +19,7 @@
         /// Z-axe
         /// </summary>
         public int Height { get; set; }
-        public virtual List<Cell> Cells { get; set; } = new();
+        public virtual List<Cell> Cells { get; set; } = new List<Cell>();
 
         public Cell? this[int x, int y, int z]
         {

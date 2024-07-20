@@ -1,4 +1,7 @@
-﻿namespace MazeGenerator
+﻿using System;
+using System.Collections.Generic;
+
+namespace MazeGenerator
 {
     public static class RandomExtention
     {
