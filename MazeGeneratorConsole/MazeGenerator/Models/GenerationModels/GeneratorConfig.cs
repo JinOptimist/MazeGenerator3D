@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using MazeGenerator.Models.GenerationModels;
+using System.Numerics;
 
 namespace MazeGenerator
 {
@@ -22,7 +23,7 @@ namespace MazeGenerator
         public Vector3? StartPoint { get; set; }
         public Vector3? EndPoint { get; set; }
 
-        public bool IsLongCorridors { get; set; }
-        public int RandomSeed { get; set; }
+        public GenerationWeights GenerationWeights { get; set; }
+        public int Seed { get; set; }
     }
 }

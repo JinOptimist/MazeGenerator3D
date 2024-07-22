@@ -19,7 +19,13 @@ namespace MazeGenerator.Models.MazeModels
         /// Z-axe
         /// </summary>
         public int Height { get; set; }
+
         public virtual List<Cell> Cells { get; set; } = new List<Cell>();
+
+        /// <summary>
+        /// Seed base on what maze was builded
+        /// </summary>
+        public int Seed {  get; set; }
 
         public Cell? this[int x, int y, int z]
         {

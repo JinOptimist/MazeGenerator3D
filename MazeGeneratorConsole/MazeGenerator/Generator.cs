@@ -11,11 +11,13 @@ namespace MazeGenerator
     public class Generator
     {
         private MazeForGeneration _maze;
+        private GenerationWeights _weightsGenerator;
         private Random _random;
 
         public Maze Generate(int length = 6, int width = 7, int height = 5,
             Vector3? startPoint = null,
             Vector3? endPoint = null,
+            GenerationWeights weights = null,
             int? seed = null)
         {
             var defaultGeneratorConfig = new GeneratorConfig
@@ -25,7 +27,8 @@ namespace MazeGenerator
                 Height = height,
                 StartPoint = startPoint,
                 EndPoint = endPoint,
-                RandomSeed = seed ?? DateTime.Now.Millisecond,
+                GenerationWeights = weights ?? new GenerationWeights(),
+                Seed = seed ?? DateTime.Now.Millisecond,
             };
 
             return Generate(defaultGeneratorConfig);
@@ -33,7 +36,8 @@ namespace MazeGenerator
 
         public Maze Generate(GeneratorConfig config)
         {
-            _random = new Random(config.RandomSeed);
+            _random = new Random(config.Seed);
+            _weightsGenerator = config.GenerationWeights;
             _maze = new MazeForGeneration
             {
                 Width = config.Width,
@@ -51,6 +55,7 @@ namespace MazeGenerator
                 Length = _maze.Legnth,
                 Width = _maze.Width,
                 Height = _maze.Height,
+                Seed = config.Seed,
                 Cells = _maze.Cells.Select(x =>
                     new Cell
                     {
@@ -115,7 +120,7 @@ namespace MazeGenerator
             while (_maze.Cells.Any(x => x.State == BuildingState.Visited))
             {
                 miner.CurrentCell.State = BuildingState.Visited;
-                var cellsAvailableToStep = GetCellsAvailableToStep(miner.CurrentCell)
+                var cellsAvailableToStep = GetCellsAvailableToStep(miner)
                     .ToList();
                 if (cellsAvailableToStep.Count() == 0)
                 {
@@ -131,7 +136,7 @@ namespace MazeGenerator
                     continue;
                 }
                 // TODO use a weight for each option when call random
-                var cellToStep = _random.GetRandomFrom(cellsAvailableToStep);
+                var cellToStep = _random.GetRandomFromByWeight(cellsAvailableToStep);
                 var movmentVector = cellToStep - miner.CurrentCell;
                 // if z == 0 it means that miner moving on the same level
                 if (movmentVector.Z == 0)
@@ -188,7 +193,6 @@ namespace MazeGenerator
                     miner.CurrentCell = cell3;
                 }
             }
-
         }
 
         private InnerPart ChooseStairByVector(Vector3 vectorToTheCell1)
@@ -259,26 +263,42 @@ namespace MazeGenerator
             }
         }
 
-        private IEnumerable<CellForGeneration> GetCellsAvailableToStep(CellForGeneration centralCell)
+        private IEnumerable<OptionWithWeight<CellForGeneration>> GetCellsAvailableToStep(Miner miner)
         {
+            var centralCell = miner.CurrentCell;
             var availableDirectionOnTheSameLevel =
                 GetAvailableDirectionsOnTheSameLevel(centralCell);
 
             foreach (var vectorToCell in availableDirectionOnTheSameLevel)
             {
                 var cell = GetCellByDirection(centralCell, vectorToCell)!;
-                yield return cell;
+                yield return new OptionWithWeight<CellForGeneration>
+                {
+                    Option = cell,
+                    Weight = _weightsGenerator
+                        .CalculateWeightForStep(vectorToCell, miner.LastStepDirection)
+                };
 
                 var cellOnTheLevelAbove = GetCellOnTheLevelAbove(centralCell, vectorToCell);
                 if (cellOnTheLevelAbove != null)
                 {
-                    yield return cellOnTheLevelAbove;
+                    yield return new OptionWithWeight<CellForGeneration>
+                    {
+                        Option = cellOnTheLevelAbove,
+                        Weight = _weightsGenerator.
+                            CalculateWeightForStair(_maze, cellOnTheLevelAbove)
+                    };
                 }
 
                 var cellOnTheLevelBelow = GetCellOnTheLevelBelow(centralCell, vectorToCell);
                 if (cellOnTheLevelBelow != null)
                 {
-                    yield return cellOnTheLevelBelow;
+                    yield return new OptionWithWeight<CellForGeneration>
+                    {
+                        Option = cellOnTheLevelBelow,
+                        Weight = _weightsGenerator.
+                            CalculateWeightForStair(_maze, cellOnTheLevelBelow)
+                    };
                 }
             }
         }
