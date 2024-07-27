@@ -48,11 +48,13 @@ namespace MazeGeneratorConsole
             int rowsDrawedPrevChunks,
             int drawedLevels)
         {
+            var magicLevelCountingHACK = chunk.Height - level - 1;
+
             var oneLevelHeightCells = chunk.Width + MARGIN;
             var levelMargin = level * oneLevelHeightCells + rowsDrawedPrevChunks;
             Console.SetCursorPosition(0, MARGIN - 2 + levelMargin);
-            Console.Write($"Lvl - {level} [{chunk.Length}, {chunk.Width}]. " +
-                $"Full Lvl - {drawedLevels + level}");
+            Console.Write($"Lvl(z) - {magicLevelCountingHACK} [{chunk.Length}, {chunk.Width}]. " +
+                $"Full Lvl - {drawedLevels + magicLevelCountingHACK}");
 
             //Draw upper border
             for (int x = 0; x < chunk.Length * 2; x++)
@@ -78,7 +80,9 @@ namespace MazeGeneratorConsole
                 {
                     var xMargin = x * 2 + MARGIN;
                     var yMargin = (chunk.Width - y - 1) + MARGIN + levelMargin;
-                    var cell = chunk[x, y, level]!;
+
+                    
+                    var cell = chunk[x, y, magicLevelCountingHACK]!;//var zIndex = chunk.Height - z - 1;
                     var walls = cell.Wall;
 
                     Console.SetCursorPosition(xMargin + 1, yMargin);

@@ -21,6 +21,10 @@
         StairFromEastToWest,
         
         Start,
+        /// <summary>
+        /// Exit from maze
+        /// </summary>
         Exit,
+        ExitFromChunk,
     }
 }

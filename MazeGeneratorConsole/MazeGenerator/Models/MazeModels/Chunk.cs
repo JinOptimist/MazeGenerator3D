@@ -41,5 +41,14 @@ namespace MazeGenerator.Models.MazeModels
 
         public Cell GetExitCell()
             => Cells.Single(x => x.InnerPart == InnerPart.Exit);
+
+        public Cell GetStartCell()
+            => Cells.Single(x => x.InnerPart == InnerPart.Start);
+
+        public override string ToString()
+        {
+            var exist = GetExitCell();
+            return $"Chunk [{Length}, {Width}, {Height}] => Exit {exist}";
+        }
     }
 }

@@ -55,16 +55,15 @@ namespace MazeGenerator
         {
             var chunkCount = CalcChunkCount(config);
             var chunks = new List<Chunk>();
-            //var configForNextChunk = config;
             Vector2? lastExit = null;
-            for (int chunkNumber = 0; chunkNumber < chunkCount; chunkNumber++)
+            for (int chunkNumber = chunkCount - 1; chunkNumber >= 0; chunkNumber--)
             {
                 var configForNextChunk = BuildConfigForChunk(
-                    config, 
-                    chunkNumber, 
+                    config,
+                    chunkNumber,
                     lastExit,
                     chunkCount);
-                
+
                 var chunk = GenerateChunk(configForNextChunk);
                 chunks.Add(chunk);
 
@@ -72,7 +71,8 @@ namespace MazeGenerator
                 // Each chunk start counting Z index from Zero
                 lastExit = new Vector2(exit.X, exit.Y);
             }
-            var exits = chunks.Select(x => x.GetExitCell());
+
+            BuildPathwayBetweenChunks(chunks);
 
             var maze = new Maze
             {
@@ -85,8 +85,30 @@ namespace MazeGenerator
             return maze;
         }
 
+        private void BuildPathwayBetweenChunks(List<Chunk> chunks)
+        {
+            // Get all exists except last one and break floor
+            chunks
+                .Select(x => x.GetExitCell())
+                .OrderBy(x => x.Z)
+                .Reverse()
+                .Skip(1)
+                .ToList()
+                .ForEach(cell =>
+                {
+                    cell.Wall = BreakWall(cell.Wall, Wall.Floor);
+                    cell.InnerPart = InnerPart.ExitFromChunk;
+                });
+
+            // for each start break roof
+            chunks
+                .Select(x => x.GetStartCell())
+                .ToList()
+                .ForEach(x => x.Wall = BreakWall(x.Wall, Wall.Roof));
+        }
+
         private ChunkGeneratorConfig BuildConfigForChunk(
-            MazeGeneratorConfig initialConfig, 
+            MazeGeneratorConfig initialConfig,
             int chunkNumber,
             Vector2? lastExit,
             int chunkCount)
@@ -100,10 +122,10 @@ namespace MazeGenerator
             {
                 Seed = initialConfig.Seed,
                 Legnth = Math.Max(
-                    initialConfig.Legnth - chunkCount + chunkNumber + 1,
+                    initialConfig.Legnth - chunkNumber,
                     MIN_LENGTH),
                 Width = Math.Max(
-                    initialConfig.Width - chunkCount + chunkNumber + 1,
+                    initialConfig.Width - chunkNumber,
                     MIN_WIDTH),
                 Height = chunkHeight,
                 StartPoint = lastExit ?? initialConfig.StartPoint,
@@ -130,7 +152,7 @@ namespace MazeGenerator
             {
                 return height;
             }
-            
+
         }
 
         public Chunk GenerateChunk(ChunkGeneratorConfig config)
@@ -171,11 +193,11 @@ namespace MazeGenerator
 
         private void BuildExit(Vector2? endPoint)
         {
-            var lastOneLevelZ = _chunk.Height - 1;
+            var lowestLevelZ = 0;
             CellForGeneration endCell;
             if (endPoint.HasValue)
             {
-                endCell = _chunk[endPoint.Value.X, endPoint.Value.Y, lastOneLevelZ];
+                endCell = _chunk[endPoint.Value.X, endPoint.Value.Y, lowestLevelZ];
             }
             else
             {
@@ -183,9 +205,22 @@ namespace MazeGenerator
                     .Where(x =>
                         x.InnerPart == InnerPart.None
                         && x.State == BuildingState.Finished
-                        && x.Z == lastOneLevelZ)
+                        && x.Z == lowestLevelZ);
+                var deadEnds = allEmptyCellsFromLastLevel
+                    .Where(cell => GetNearCellsSameLevel(cell)
+                        .Where(nearCell => nearCell != null)
+                        .Count() == 1)
                     .ToList();
-                endCell = _random.GetRandomFrom(allEmptyCellsFromLastLevel);
+                if (deadEnds.Any())
+                {
+                    endCell = _random.GetRandomFrom(deadEnds);
+                }
+                else
+                {
+                    // Maybe we haven't deadends.
+                    // Then build exist on random cell on the last floor
+                    endCell = _random.GetRandomFrom(allEmptyCellsFromLastLevel.ToList());
+                }
             }
 
             endCell.InnerPart = InnerPart.Exit;
@@ -216,12 +251,12 @@ namespace MazeGenerator
         private void BuildCorridors(Vector2? startPoint)
         {
             var miner = new Miner();
-            var firstOneLevelZ = 0;
+            var highestLevelZ = _chunk.Height - 1;
             var startingCell = startPoint.HasValue
-                ? _chunk[startPoint.Value.X, startPoint.Value.Y, firstOneLevelZ]
+                ? _chunk[startPoint.Value.X, startPoint.Value.Y, highestLevelZ]
                 : _random.GetRandomFrom(_chunk
                     .Cells
-                    .Where(x => x.Z == firstOneLevelZ)
+                    .Where(x => x.Z == highestLevelZ)
                     .ToList());
             startingCell.InnerPart = InnerPart.Start;
 
@@ -338,38 +373,38 @@ namespace MazeGenerator
             }
             if (movmentDirection.X == 1)
             {
-                currentCell.Wall &= ~Wall.East;
-                cellToStep.Wall &= ~Wall.West;
+                currentCell.Wall = BreakWall(currentCell.Wall, Wall.East);
+                cellToStep.Wall = BreakWall(cellToStep.Wall, Wall.West);
                 return;
             }
             if (movmentDirection.X == -1)
             {
-                currentCell.Wall &= ~Wall.West;
-                cellToStep.Wall &= ~Wall.East;
+                currentCell.Wall = BreakWall(currentCell.Wall, Wall.West);
+                cellToStep.Wall = BreakWall(cellToStep.Wall, Wall.East);
                 return;
             }
             if (movmentDirection.Y == 1)
             {
-                currentCell.Wall &= ~Wall.North;
-                cellToStep.Wall &= ~Wall.South;
+                currentCell.Wall = BreakWall(currentCell.Wall, Wall.North);
+                cellToStep.Wall = BreakWall(cellToStep.Wall, Wall.South);
                 return;
             }
             if (movmentDirection.Y == -1)
             {
-                currentCell.Wall &= ~Wall.South;
-                cellToStep.Wall &= ~Wall.North;
+                currentCell.Wall = BreakWall(currentCell.Wall, Wall.South);
+                cellToStep.Wall = BreakWall(cellToStep.Wall, Wall.North);
                 return;
             }
             if (movmentDirection.Z == 1)
             {
-                currentCell.Wall &= ~Wall.Roof;
-                cellToStep.Wall &= ~Wall.Floor;
+                currentCell.Wall = BreakWall(currentCell.Wall, Wall.Roof);
+                cellToStep.Wall = BreakWall(cellToStep.Wall, Wall.Floor);
                 return;
             }
             if (movmentDirection.Z == -1)
             {
-                currentCell.Wall &= ~Wall.Floor;
-                cellToStep.Wall &= ~Wall.Roof;
+                currentCell.Wall = BreakWall(currentCell.Wall, Wall.Floor);
+                cellToStep.Wall = BreakWall(cellToStep.Wall, Wall.Roof);
                 return;
             }
         }
@@ -510,8 +545,21 @@ namespace MazeGenerator
             }
         }
 
+        private IEnumerable<CellForGeneration> GetNearCellsSameLevel(CellForGeneration centralCell)
+        {
+            yield return _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
+            yield return _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
+            yield return _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
+            yield return _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z];
+        }
+
         private Wall AllWalls()
                 => Wall.North | Wall.East | Wall.South | Wall.West | Wall.Roof | Wall.Floor;
+
+        private Wall BreakWall(Wall currentWall, Wall wallToBreak)
+        {
+            return currentWall & ~wallToBreak;
+        }
 
         private CellForGeneration? GetCellByDirection(CellForGeneration centralCell, Vector3 vector3)
             => _chunk[centralCell.X + vector3.X, centralCell.Y + vector3.Y, centralCell.Z + vector3.Z];
