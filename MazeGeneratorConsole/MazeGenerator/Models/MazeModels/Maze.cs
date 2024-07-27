@@ -1,41 +1,29 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace MazeGenerator.Models.MazeModels
 {
     public class Maze
     {
+        public List<Chunk> Chunks {  get; set; } = new List<Chunk>();
+
         /// <summary>
         /// X-axe
         /// </summary>
-        public int Length { get; set; }
+        public int MaxLength { get; set; }
 
         /// <summary>
         /// Y-axe
         /// </summary>
-        public int Width { get; set; }
+        public int MaxWidth { get; set; }
 
         /// <summary>
         /// Z-axe
         /// </summary>
-        public int Height { get; set; }
-
-        public virtual List<Cell> Cells { get; set; } = new List<Cell>();
+        public int FullHeight { get; set; }
 
         /// <summary>
         /// Seed base on what maze was builded
         /// </summary>
-        public int Seed {  get; set; }
-
-        public Cell? this[int x, int y, int z]
-        {
-            get
-            {
-                return Cells.FirstOrDefault(cell =>
-                    cell.X == x
-                    && cell.Y == y
-                    && cell.Z == z);
-            }
-        }
+        public int Seed { get; set; }
     }
 }

@@ -9,7 +9,7 @@ namespace MazeGeneratorConsole
         public const char WEST = '|';
         public const char EAST = '|';
         public const char STAIR = '^';
-        public const char START = 'S'; 
+        public const char START = 'S';
         public const char EXIT = 'X';
         public const char DOT = '.';
 
@@ -17,22 +17,45 @@ namespace MazeGeneratorConsole
 
         public void ClearDraw(Maze maze)
         {
-            for (int z = 0; z < maze.Height; z++)
+            var rowsDrawedPrevChunk = 0;
+            var drawedLevels = 0;
+            for (int chunkIndex = 0; chunkIndex < maze.Chunks.Count; chunkIndex++)
             {
-                DrawOneLevel(maze, z);
+                var chunk = maze.Chunks[chunkIndex];
+                rowsDrawedPrevChunk += ChunkDraw(chunk, rowsDrawedPrevChunk, chunkIndex, drawedLevels);
+                drawedLevels += chunk.Height;
             }
             Console.WriteLine($"Seed: {maze.Seed}");
         }
 
-        private void DrawOneLevel(Maze maze, int level)
+        private int ChunkDraw(Chunk chunk, int rowsDrawedPrevChunks, int chunkIndex, int drawedLevels)
         {
-            var oneLevelHeightCells = maze.Width + MARGIN;
-            var levelMargin = level * oneLevelHeightCells;
+            var rowsDrawedCurentChunk = 0;
+            for (int z = 0; z < chunk.Height; z++)
+            {
+                DrawOneLevel(chunk, z, rowsDrawedPrevChunks, drawedLevels);
+                rowsDrawedCurentChunk += chunk.Width + MARGIN;
+            }
+
+            rowsDrawedCurentChunk += 1;
+            Console.SetCursorPosition(0, rowsDrawedCurentChunk + rowsDrawedPrevChunks - 1);
+            Console.WriteLine($" ------------------------ END Chunk {chunkIndex} ----------");
+            return rowsDrawedCurentChunk;
+        }
+
+        private void DrawOneLevel(Chunk chunk,
+            int level,
+            int rowsDrawedPrevChunks,
+            int drawedLevels)
+        {
+            var oneLevelHeightCells = chunk.Width + MARGIN;
+            var levelMargin = level * oneLevelHeightCells + rowsDrawedPrevChunks;
             Console.SetCursorPosition(0, MARGIN - 2 + levelMargin);
-            Console.Write($"Level - {level}");
+            Console.Write($"Lvl - {level} [{chunk.Length}, {chunk.Width}]. " +
+                $"Full Lvl - {drawedLevels + level}");
 
             //Draw upper border
-            for (int x = 0; x < maze.Length * 2; x++)
+            for (int x = 0; x < chunk.Length * 2; x++)
             {
                 var yMargin = MARGIN - 1 + levelMargin;
                 Console.SetCursorPosition(MARGIN + x, yMargin);
@@ -40,22 +63,22 @@ namespace MazeGeneratorConsole
             }
 
             //Draw easten border
-            for (int y = 0; y < maze.Width; y++)
+            for (int y = 0; y < chunk.Width; y++)
             {
-                var xMargin = maze.Length * 2 + MARGIN;
-                var yMargin = (maze.Width - y - 1) + MARGIN + levelMargin;
+                var xMargin = chunk.Length * 2 + MARGIN;
+                var yMargin = (chunk.Width - y - 1) + MARGIN + levelMargin;
                 Console.SetCursorPosition(xMargin, yMargin);
                 Console.Write(WEST);
             }
 
             // Draw cells
-            for (int y = 0; y < maze.Width; y++)
+            for (int y = 0; y < chunk.Width; y++)
             {
-                for (int x = 0; x < maze.Length; x++)
+                for (int x = 0; x < chunk.Length; x++)
                 {
                     var xMargin = x * 2 + MARGIN;
-                    var yMargin = (maze.Width - y - 1) + MARGIN + levelMargin;
-                    var cell = maze[x, y, level]!;
+                    var yMargin = (chunk.Width - y - 1) + MARGIN + levelMargin;
+                    var cell = chunk[x, y, level]!;
                     var walls = cell.Wall;
 
                     Console.SetCursorPosition(xMargin + 1, yMargin);
@@ -96,11 +119,11 @@ namespace MazeGeneratorConsole
                 }
             }
 
-            Console.SetCursorPosition(maze.Length * 2 + MARGIN, maze.Width + MARGIN + levelMargin);
+            Console.SetCursorPosition(chunk.Length * 2 + MARGIN, chunk.Width + MARGIN + levelMargin);
         }
 
         [Obsolete]
-        public void FullDraw(Maze maze)
+        public void FullDraw(Chunk maze)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 

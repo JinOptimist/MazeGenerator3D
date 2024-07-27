@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace MazeGenerator.Models.GenerationModels
 {
-    public class MazeForGeneration
+    public class ChunkForGeneration
     {
         /// <summary>
         /// X-axe

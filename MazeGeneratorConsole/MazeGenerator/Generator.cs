@@ -5,40 +5,139 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography.X509Certificates;
 
 namespace MazeGenerator
 {
     public class Generator
     {
-        private MazeForGeneration _maze;
-        private GenerationWeights _weightsGenerator;
+        private ChunkForGeneration _chunk;
+        private GenerationWeights _weightsForGeneration;
         private Random _random;
 
-        public Maze Generate(int length = 6, int width = 7, int height = 5,
-            Vector3? startPoint = null,
-            Vector3? endPoint = null,
-            GenerationWeights weights = null,
+        private const int MIN_LENGTH = 3;
+        private const int MIN_WIDTH = 3;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="maxLength">Axe X</param>
+        /// <param name="maxWidth">Axe Y</param>
+        /// <param name="height">Axe Z</param>
+        /// <param name="startPoint"></param>
+        /// <param name="endPoint"></param>
+        /// <param name="weights"></param>
+        /// <param name="seed"></param>
+        /// <returns></returns>
+        public Maze Generate(int maxLength = 6, int maxWidth = 7, int height = 5,
+            int chunkHeight = 3,
+            Vector2? startPoint = null,
+            Vector2? endPoint = null,
+            GenerationWeights? weights = null,
             int? seed = null)
         {
-            var defaultGeneratorConfig = new GeneratorConfig
+            var defaultGeneratorConfig = new MazeGeneratorConfig
             {
-                Legnth = length,
-                Width = width,
+                Legnth = maxLength,
+                Width = maxWidth,
                 Height = height,
                 StartPoint = startPoint,
                 EndPoint = endPoint,
-                GenerationWeights = weights ?? new GenerationWeights(),
+                ChunkHeight = chunkHeight,
+                WeightsForGeneration = weights ?? new GenerationWeights(),
                 Seed = seed ?? DateTime.Now.Millisecond,
             };
 
             return Generate(defaultGeneratorConfig);
         }
 
-        public Maze Generate(GeneratorConfig config)
+        public Maze Generate(MazeGeneratorConfig config)
+        {
+            var chunkCount = CalcChunkCount(config);
+            var chunks = new List<Chunk>();
+            //var configForNextChunk = config;
+            Vector2? lastExit = null;
+            for (int chunkNumber = 0; chunkNumber < chunkCount; chunkNumber++)
+            {
+                var configForNextChunk = BuildConfigForChunk(
+                    config, 
+                    chunkNumber, 
+                    lastExit,
+                    chunkCount);
+                
+                var chunk = GenerateChunk(configForNextChunk);
+                chunks.Add(chunk);
+
+                var exit = chunk.GetExitCell();
+                // Each chunk start counting Z index from Zero
+                lastExit = new Vector2(exit.X, exit.Y);
+            }
+            var exits = chunks.Select(x => x.GetExitCell());
+
+            var maze = new Maze
+            {
+                Chunks = chunks,
+                FullHeight = chunks.Sum(x => x.Height),
+                MaxLength = chunks.Max(x => x.Length),
+                MaxWidth = chunks.Max(x => x.Width),
+                Seed = config.Seed,
+            };
+            return maze;
+        }
+
+        private ChunkGeneratorConfig BuildConfigForChunk(
+            MazeGeneratorConfig initialConfig, 
+            int chunkNumber,
+            Vector2? lastExit,
+            int chunkCount)
+        {
+            var chunkHeight = CalcChunkHeight(
+                    initialConfig.ChunkHeight,
+                    chunkNumber,
+                    initialConfig.Height);
+
+            var configForNextChunk = new ChunkGeneratorConfig
+            {
+                Seed = initialConfig.Seed,
+                Legnth = Math.Max(
+                    initialConfig.Legnth - chunkCount + chunkNumber + 1,
+                    MIN_LENGTH),
+                Width = Math.Max(
+                    initialConfig.Width - chunkCount + chunkNumber + 1,
+                    MIN_WIDTH),
+                Height = chunkHeight,
+                StartPoint = lastExit ?? initialConfig.StartPoint,
+                WeightsForGeneration = initialConfig.WeightsForGeneration,
+            };
+
+            return configForNextChunk;
+        }
+
+        private int CalcChunkCount(MazeGeneratorConfig config)
+        {
+            return config.Height % config.ChunkHeight == 0
+                ? config.Height / config.ChunkHeight
+                : config.Height / config.ChunkHeight + 1;
+        }
+
+        private int CalcChunkHeight(int height, int chunkNumber, int fullHeight)
+        {
+            if (height * (chunkNumber + 1) > fullHeight)
+            {
+                return fullHeight % height;
+            }
+            else
+            {
+                return height;
+            }
+            
+        }
+
+        public Chunk GenerateChunk(ChunkGeneratorConfig config)
         {
             _random = new Random(config.Seed);
-            _weightsGenerator = config.GenerationWeights;
-            _maze = new MazeForGeneration
+            _weightsForGeneration = config.WeightsForGeneration;
+            _chunk = new ChunkForGeneration
             {
                 Width = config.Width,
                 Height = config.Height,
@@ -49,14 +148,14 @@ namespace MazeGenerator
             BuildCorridors(config.StartPoint);
             BuildExit(config.EndPoint);
 
-            // Build Cell base on CellForGeneration for maze.Cells
-            var maze = new Maze
+            var chunk = new Chunk
             {
-                Length = _maze.Legnth,
-                Width = _maze.Width,
-                Height = _maze.Height,
+                Length = _chunk.Legnth,
+                Width = _chunk.Width,
+                Height = _chunk.Height,
                 Seed = config.Seed,
-                Cells = _maze.Cells.Select(x =>
+                Cells = _chunk.Cells.Select(x =>
+                    // Build Cell base on CellForGeneration for maze.Cells
                     new Cell
                     {
                         X = x.X,
@@ -67,30 +166,38 @@ namespace MazeGenerator
                     })
                 .ToList()
             };
-            return maze;
+            return chunk;
         }
 
-        private void BuildExit(Vector3? endPoint)
+        private void BuildExit(Vector2? endPoint)
         {
-            var allEmptyCells = _maze.Cells
-                .Where(x =>
-                    x.InnerPart == InnerPart.None
-                    && x.State == BuildingState.Finished)
-                .ToList();
+            var lastOneLevelZ = _chunk.Height - 1;
+            CellForGeneration endCell;
+            if (endPoint.HasValue)
+            {
+                endCell = _chunk[endPoint.Value.X, endPoint.Value.Y, lastOneLevelZ];
+            }
+            else
+            {
+                var allEmptyCellsFromLastLevel = _chunk.Cells
+                    .Where(x =>
+                        x.InnerPart == InnerPart.None
+                        && x.State == BuildingState.Finished
+                        && x.Z == lastOneLevelZ)
+                    .ToList();
+                endCell = _random.GetRandomFrom(allEmptyCellsFromLastLevel);
+            }
 
-            var endCell = endPoint.HasValue
-                ? _maze[endPoint.Value.X, endPoint.Value.Y, endPoint.Value.Z]
-                : _random.GetRandomFrom(allEmptyCells);
             endCell.InnerPart = InnerPart.Exit;
         }
 
         private void BuildFullWalls()
         {
-            for (int z = 0; z < _maze.Height; z++)
+            for (int z = 0; z < _chunk.Height; z++)
             {
-                for (int y = 0; y < _maze.Width; y++)
+                for (int y = 0; y < _chunk.Width; y++)
                 {
-                    for (int x = 0; x < _maze.Legnth; x++)
+                    for (int x = 0; x < _chunk.Legnth; x++)
                     {
                         var cell = new CellForGeneration()
                         {
@@ -100,24 +207,28 @@ namespace MazeGenerator
                             State = BuildingState.New,
                             Wall = AllWalls()
                         };
-                        _maze.Cells.Add(cell);
+                        _chunk.Cells.Add(cell);
                     }
                 }
             }
         }
 
-        private void BuildCorridors(Vector3? startPoint)
+        private void BuildCorridors(Vector2? startPoint)
         {
             var miner = new Miner();
+            var firstOneLevelZ = 0;
             var startingCell = startPoint.HasValue
-                ? _maze[startPoint.Value.X, startPoint.Value.Y, startPoint.Value.Z]
-                : _random.GetRandomFrom(_maze.Cells);
+                ? _chunk[startPoint.Value.X, startPoint.Value.Y, firstOneLevelZ]
+                : _random.GetRandomFrom(_chunk
+                    .Cells
+                    .Where(x => x.Z == firstOneLevelZ)
+                    .ToList());
             startingCell.InnerPart = InnerPart.Start;
 
             miner.CurrentCell = startingCell;
             miner.CurrentCell.State = BuildingState.Visited;
 
-            while (_maze.Cells.Any(x => x.State == BuildingState.Visited))
+            while (_chunk.Cells.Any(x => x.State == BuildingState.Visited))
             {
                 miner.CurrentCell.State = BuildingState.Visited;
                 var cellsAvailableToStep = GetCellsAvailableToStep(miner)
@@ -125,7 +236,7 @@ namespace MazeGenerator
                 if (cellsAvailableToStep.Count() == 0)
                 {
                     miner.CurrentCell.State = BuildingState.Finished;
-                    var visitedCells = _maze.Cells
+                    var visitedCells = _chunk.Cells
                         .Where(x => x.State == BuildingState.Visited)
                         .ToList();
                     if (visitedCells.Count == 0)
@@ -275,7 +386,7 @@ namespace MazeGenerator
                 yield return new OptionWithWeight<CellForGeneration>
                 {
                     Option = cell,
-                    Weight = _weightsGenerator
+                    Weight = _weightsForGeneration
                         .CalculateWeightForStep(vectorToCell, miner.LastStepDirection)
                 };
 
@@ -285,8 +396,8 @@ namespace MazeGenerator
                     yield return new OptionWithWeight<CellForGeneration>
                     {
                         Option = cellOnTheLevelAbove,
-                        Weight = _weightsGenerator.
-                            CalculateWeightForStair(_maze, cellOnTheLevelAbove)
+                        Weight = _weightsForGeneration.
+                            CalculateWeightForStair(_chunk, cellOnTheLevelAbove)
                     };
                 }
 
@@ -296,8 +407,8 @@ namespace MazeGenerator
                     yield return new OptionWithWeight<CellForGeneration>
                     {
                         Option = cellOnTheLevelBelow,
-                        Weight = _weightsGenerator.
-                            CalculateWeightForStair(_maze, cellOnTheLevelBelow)
+                        Weight = _weightsForGeneration.
+                            CalculateWeightForStair(_chunk, cellOnTheLevelBelow)
                     };
                 }
             }
@@ -381,19 +492,19 @@ namespace MazeGenerator
 
         private IEnumerable<Vector3> GetAvailableDirectionsOnTheSameLevel(CellForGeneration centralCell)
         {
-            if (_maze[centralCell.X - 1, centralCell.Y, centralCell.Z]?.State == BuildingState.New)
+            if (_chunk[centralCell.X - 1, centralCell.Y, centralCell.Z]?.State == BuildingState.New)
             {
                 yield return new Vector3(-1, 0, 0);
             }
-            if (_maze[centralCell.X + 1, centralCell.Y, centralCell.Z]?.State == BuildingState.New)
+            if (_chunk[centralCell.X + 1, centralCell.Y, centralCell.Z]?.State == BuildingState.New)
             {
                 yield return new Vector3(1, 0, 0);
             }
-            if (_maze[centralCell.X, centralCell.Y - 1, centralCell.Z]?.State == BuildingState.New)
+            if (_chunk[centralCell.X, centralCell.Y - 1, centralCell.Z]?.State == BuildingState.New)
             {
                 yield return new Vector3(0, -1, 0);
             }
-            if (_maze[centralCell.X, centralCell.Y + 1, centralCell.Z]?.State == BuildingState.New)
+            if (_chunk[centralCell.X, centralCell.Y + 1, centralCell.Z]?.State == BuildingState.New)
             {
                 yield return new Vector3(0, 1, 0);
             }
@@ -403,6 +514,6 @@ namespace MazeGenerator
                 => Wall.North | Wall.East | Wall.South | Wall.West | Wall.Roof | Wall.Floor;
 
         private CellForGeneration? GetCellByDirection(CellForGeneration centralCell, Vector3 vector3)
-            => _maze[centralCell.X + vector3.X, centralCell.Y + vector3.Y, centralCell.Z + vector3.Z];
+            => _chunk[centralCell.X + vector3.X, centralCell.Y + vector3.Y, centralCell.Z + vector3.Z];
     }
 }

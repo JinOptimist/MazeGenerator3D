@@ -47,7 +47,7 @@ namespace MazeGenerator.Models.GenerationModels
                 ? StepForwardWeight
                 : StepRandomWeight;
 
-        public double CalculateWeightForStair(MazeForGeneration maze, CellForGeneration cell)
+        public double CalculateWeightForStair(ChunkForGeneration maze, CellForGeneration cell)
         {
             var countOfStairsOnTheFloor = maze.Cells.Count(c => c.Z == cell.Z && c.IsStair);
             return countOfStairsOnTheFloor == 1
