@@ -547,10 +547,22 @@ namespace MazeGenerator
 
         private IEnumerable<CellForGeneration> GetNearCellsSameLevel(CellForGeneration centralCell)
         {
-            yield return _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
-            yield return _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
-            yield return _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
-            yield return _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z];
+            if (centralCell.Wall.HasFlag(Wall.West))
+            {
+                yield return _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
+            }
+            if (centralCell.Wall.HasFlag(Wall.East))
+            {
+                yield return _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
+            }
+            if (centralCell.Wall.HasFlag(Wall.South))
+            {
+                yield return _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
+            }
+            if (centralCell.Wall.HasFlag(Wall.North))
+            {
+                yield return _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z];
+            }
         }
 
         private Wall AllWalls()

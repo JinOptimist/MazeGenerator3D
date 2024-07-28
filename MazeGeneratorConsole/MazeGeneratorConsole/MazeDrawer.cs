@@ -11,6 +11,7 @@ namespace MazeGeneratorConsole
         public const char STAIR = '^';
         public const char START = 'S';
         public const char EXIT = 'X';
+        public const char EXIT_FROM_CHUNK = 'x';
         public const char DOT = '.';
 
         public const int MARGIN = 2;
@@ -101,6 +102,9 @@ namespace MazeGeneratorConsole
                                 break;
                             case InnerPart.Exit:
                                 Console.Write(EXIT);
+                                break;
+                            case InnerPart.ExitFromChunk:
+                                Console.Write(EXIT_FROM_CHUNK);
                                 break;
                             default:
                                 break;
