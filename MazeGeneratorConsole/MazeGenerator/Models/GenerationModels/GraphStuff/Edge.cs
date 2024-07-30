@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Xml;
 
 namespace MazeGenerator.Models.GenerationModels.GraphStuff
 {
@@ -32,6 +33,13 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
         public override int GetHashCode()
         {
             return From.GetHashCode() ^ To.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return $"[{Direction.X}, {Direction.Y}, {Direction.Z}] " +
+                $": [{From.X}, {From.Y}, {From.Z}] " +
+                $"=> [{To.X}, {To.Y}, {To.Z}]";
         }
     }
 }

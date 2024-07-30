@@ -49,22 +49,64 @@ namespace MazeGenerator
                 }
 
                 var edgeToStep = _random.GetRandomFrom(currentVertex.GetPossibleExitSteps);
-                RemoveEdgesToVertext(edgeToStep.To);
+                RemoveEdgesToTheVertext(edgeToStep.To);
                 RemoveWall(edgeToStep);
                 if (edgeToStep.Direction.Z != 0)
                 {
                     // we try to build stairs
                     var middleVertext = GetMiddleVertex(edgeToStep);
                     middleVertext.ClearPossibleExitSteps();
+                    middleVertext.State = BuildingState.Finished;
+                    var stepToMiddle = currentVertex.GetPossibleExitSteps.FirstOrDefault(x => x.To == middleVertext);
+                    if (stepToMiddle != null)
+                    {
+                        currentVertex.RemovePossibleExitSteps(stepToMiddle);
+                    }
+
                     var stair = ChooseStairByVector(edgeToStep.Direction);
-                    edgeToStep.To.Cell.InnerPart = stair;
+                    if (edgeToStep.Direction.Z == 1)
+                    {
+                        middleVertext.Cell.InnerPart = stair;
+                    }
+                    else
+                    {
+                        edgeToStep.To.Cell.InnerPart = stair;
+                    }
+                    
+                    UpdatePossibleEdges(edgeToStep);
                 }
 
                 currentVertex = edgeToStep.To;
             }
         }
 
-        private void RemoveEdgesToVertext(Vertex to)
+        private void UpdatePossibleEdges(Edge edgeToStep)
+        {
+            var vertexAfterStep = edgeToStep.To;
+            vertexAfterStep.ClearPossibleExitSteps();
+
+            var nextStairInTheSameDirection = GetCellByDirection(vertexAfterStep, edgeToStep.Direction);
+            if (nextStairInTheSameDirection != null
+                && nextStairInTheSameDirection.InnerPart == InnerPart.None
+                && nextStairInTheSameDirection.State == BuildingState.New)
+            {
+                vertexAfterStep.AddPossibleExitSteps(new Edge(vertexAfterStep, nextStairInTheSameDirection));
+            }
+
+            var vectorToTheSameDirectioButOnTheSameLevel = new Vector3(
+                edgeToStep.Direction.X,
+                edgeToStep.Direction.Y,
+                0);
+            var cellOnTheSameDirectioButOnTheSameLevel = GetCellByDirection(vertexAfterStep, vectorToTheSameDirectioButOnTheSameLevel);
+            if (cellOnTheSameDirectioButOnTheSameLevel != null
+                && cellOnTheSameDirectioButOnTheSameLevel.InnerPart == InnerPart.None
+                && cellOnTheSameDirectioButOnTheSameLevel.State == BuildingState.New)
+            {
+                vertexAfterStep.AddPossibleExitSteps(new Edge(vertexAfterStep, cellOnTheSameDirectioButOnTheSameLevel));
+            }
+        }
+
+        private void RemoveEdgesToTheVertext(Vertex to)
         {
             var edgesLeadingToTheNewVertex = _graph
                     .Edges
@@ -84,9 +126,9 @@ namespace MazeGenerator
                 return;
             }
 
-            var middleVertext = GetMiddleVertex(edge);
-            BreakWallsBetweenCells(edge.From.Cell, middleVertext.Cell);
-            BreakWallsBetweenCells(middleVertext.Cell, edge.To.Cell);
+            var middleVertex = GetMiddleVertex(edge);
+            BreakWallsBetweenCells(edge.From.Cell, middleVertex.Cell);
+            BreakWallsBetweenCells(middleVertex.Cell, edge.To.Cell);
         }
 
         private void BuildPossibleEdges()
@@ -145,5 +187,8 @@ namespace MazeGenerator
                 yield return northVertex;
             }
         }
+
+        private Vertex? GetCellByDirection(Vertex vertex, Vector3 vector)
+            => _graph[vertex.X + vector.X, vertex.Y + vector.Y, vertex.Z + vector.Z];
     }
 }

@@ -26,15 +26,12 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
         }
 
         public Vertex this[int x, int y, int z]
-        {
-            get
-            {
-                return Vertices.FirstOrDefault(vertex =>
+            => this[x * 1f, y * 1f, z * 1f];
+        public Vertex this[float x, float y, float z]
+            => Vertices.FirstOrDefault(vertex =>
                     vertex.Cell.X == x
                     && vertex.Cell.Y == y
                     && vertex.Cell.Z == z);
-            }
-        }
 
         public void AddVertex(Vertex vertex)
         {

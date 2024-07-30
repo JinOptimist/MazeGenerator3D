@@ -79,5 +79,10 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
             Graph = graph;
             Cell = cell;
         }
+
+        public override string ToString()
+        {
+            return $"[{X}, {Y}, {Z}]: {State}";
+        }
     }
 }
