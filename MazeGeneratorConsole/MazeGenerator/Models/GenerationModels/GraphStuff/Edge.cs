@@ -1,15 +1,37 @@
-﻿namespace MazeGenerator.Models.GenerationModels.GraphStuff
+﻿using System.Numerics;
+
+namespace MazeGenerator.Models.GenerationModels.GraphStuff
 {
     public class Edge
     {
-        public Vertex Parent { get; private set; }
-        public Vertex Child { get; private set; }
-        public double Complexity { get; set; }
+        public Vertex From { get; private set; }
+        public Vertex To { get; private set; }
+
+        public Vector3 Direction => To.Cell - From.Cell;
+        
+        // public double Complexity { get; set; }
 
         public Edge(Vertex parent, Vertex child)
         {
-            Parent = parent;
-            Child = child;
+            From = parent;
+            To = child;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var edge = obj as Edge;
+            if (edge is null)
+            {
+                return false;
+            }
+
+            return From == edge.From
+                && To == edge.To;
+        }
+
+        public override int GetHashCode()
+        {
+            return From.GetHashCode() ^ To.GetHashCode();
         }
     }
 }

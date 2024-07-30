@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using MazeGenerator.Models.MazeModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MazeGenerator.Models.GenerationModels.GraphStuff
 {
@@ -8,24 +11,45 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
         public List<Vertex> Vertices { get; private set; } = new List<Vertex>();
         public Vertex? Root { get; set; }
 
-        public ChunkForGeneration Maze {  get; private set; }
+        public ChunkForGeneration Chunk { get; private set; }
 
-        public Graph(ChunkForGeneration maze)
+        public Graph(ChunkForGeneration chunk)
         {
-            Maze = maze;
+            Chunk = chunk;
         }
 
         public void AddEdge(Edge edge)
         {
             Edges.Add(edge);
-            Vertices.Add(edge.Parent);
-            Vertices.Add(edge.Parent);
+            Vertices.Add(edge.From);
+            Vertices.Add(edge.From);
+        }
+
+        public Vertex this[int x, int y, int z]
+        {
+            get
+            {
+                return Vertices.FirstOrDefault(vertex =>
+                    vertex.Cell.X == x
+                    && vertex.Cell.Y == y
+                    && vertex.Cell.Z == z);
+            }
         }
 
         public void AddVertex(Vertex vertex)
         {
             Vertices.Add(vertex);
-            Edges.AddRange(vertex.Edges);
+        }
+
+        public void AddRangeVertex(IEnumerable<Vertex> vertexs)
+        {
+            Vertices.AddRange(vertexs);
+            //Edges = Edges.Distinct().ToList();
+        }
+
+        internal void AddRangeEdges(IEnumerable<Edge> edges)
+        {
+            Edges.AddRange(edges);
         }
     }
 }
