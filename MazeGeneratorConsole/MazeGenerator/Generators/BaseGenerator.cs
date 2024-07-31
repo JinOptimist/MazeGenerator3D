@@ -1,10 +1,9 @@
 ﻿using MazeGenerator.Models.GenerationModels;
 using MazeGenerator.Models.MazeModels;
-using System.Numerics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Diagnostics;
+using System.Numerics;
 
 namespace MazeGenerator.Generators
 {
@@ -16,6 +15,8 @@ namespace MazeGenerator.Generators
         protected Random _random;
         protected ChunkForGeneration _chunk;
         protected GenerationWeights _weightsForGeneration;
+
+        protected Action<Chunk> _debugDrawer;
 
         /// <summary>
         /// 
@@ -33,8 +34,11 @@ namespace MazeGenerator.Generators
             Vector2? startPoint = null,
             Vector2? endPoint = null,
             GenerationWeights? weights = null,
-            int? seed = null)
+            int? seed = null,
+            Action<Chunk> debugDrawer = null)
         {
+            _debugDrawer = debugDrawer;
+
             var defaultGeneratorConfig = new MazeGeneratorConfig
             {
                 Legnth = maxLength,
@@ -84,7 +88,6 @@ namespace MazeGenerator.Generators
             return maze;
         }
 
-        protected abstract void BuildExit(Vector2? endPoint);
         protected abstract void BuildCorridors();
 
         private ChunkGeneratorConfig BuildConfigForChunk(
@@ -124,6 +127,7 @@ namespace MazeGenerator.Generators
                 Width = config.Width,
                 Height = config.Height,
                 Length = config.Legnth,
+                Seed = config.Seed,
             };
 
             BuildFullWalls();
@@ -131,25 +135,7 @@ namespace MazeGenerator.Generators
             BuildCorridors();
             BuildExit(config.EndPoint);
 
-            var chunk = new Chunk
-            {
-                Length = _chunk.Length,
-                Width = _chunk.Width,
-                Height = _chunk.Height,
-                Seed = config.Seed,
-                Cells = _chunk.Cells.Select(x =>
-                    // Build Cell base on CellForGeneration for maze.Cells
-                    new Cell
-                    {
-                        X = x.X,
-                        Y = x.Y,
-                        Z = x.Z,
-                        Wall = x.Wall,
-                        InnerPart = x.InnerPart,
-                    })
-                .ToList()
-            };
-            return chunk;
+            return MapToChunk(_chunk);
         }
 
         private void BuildStart(Vector2? startPoint)
@@ -284,23 +270,136 @@ namespace MazeGenerator.Generators
         {
             if (vectorToTheCell1.X == 1)
             {
-                return InnerPart.StairFromWestToEast;
+                return InnerPart.StairUpOnEast;
             }
             if (vectorToTheCell1.X == -1)
             {
-                return InnerPart.StairFromEastToWest;
+                return InnerPart.StairUpOnWest;
             }
 
             if (vectorToTheCell1.Y == 1)
             {
-                return InnerPart.StairFromSouthToNorth;
+                return InnerPart.StairUpOnNorth;
             }
             if (vectorToTheCell1.Y == -1)
             {
-                return InnerPart.StairFromNorthToSouth;
+                return InnerPart.StairUpOnSouth;
             }
 
             throw new Exception("Unexpected vector to building stairs");
         }
+
+        protected InnerPart ChooseStairByVectorV2ForGraph(Vector3 vectorToTheCell1)
+        {
+            if (vectorToTheCell1.X != 0)
+            {
+                if (vectorToTheCell1.Z * vectorToTheCell1.X == -1)
+                {
+                    // If we go to West (X: -1) and up (Z: +1)
+                    // or we go to East (X: +1) and down (Z: -1)
+                    return InnerPart.StairUpOnWest;
+                }
+                else
+                {
+                    // If we go to West (X: -1) and down (Z: +1)
+                    // or we go to East (X: +1) and up (Z: -1)
+                    return InnerPart.StairUpOnEast;
+                }
+            }
+
+            if (vectorToTheCell1.Y != 0)
+            {
+                if (vectorToTheCell1.Z * vectorToTheCell1.Y == -1)
+                {
+                    // If we go to South (Y: -1) and up (Z: +1)
+                    // or we go to North (Y: +1) and down (Z: -1)
+                    return InnerPart.StairUpOnSouth;
+                }
+                else
+                {
+                    // If we go to South (Y: -1) and down (Z: -1)
+                    // or we go to North (Y: +1) and up (Z: +1)
+                    return InnerPart.StairUpOnNorth;
+                }
+            }
+
+            throw new Exception("Unexpected vector to building stairs");
+        }
+
+        protected Chunk MapToChunk(ChunkForGeneration chunk)
+            => new Chunk
+            {
+                Length = chunk.Length,
+                Width = chunk.Width,
+                Height = chunk.Height,
+                Seed = chunk.Seed,
+                Cells = chunk.Cells.Select(x =>
+                    // Build Cell base on CellForGeneration for maze.Cells
+                    new Cell
+                    {
+                        X = x.X,
+                        Y = x.Y,
+                        Z = x.Z,
+                        Wall = x.Wall,
+                        InnerPart = x.InnerPart,
+                    })
+                .ToList()
+            };
+
+        private void BuildExit(Vector2? endPoint)
+        {
+            var lowestLevelZ = 0;
+            CellForGeneration endCell;
+            if (endPoint.HasValue)
+            {
+                endCell = _chunk[endPoint.Value.X, endPoint.Value.Y, lowestLevelZ];
+            }
+            else
+            {
+                var allEmptyCellsFromLastLevel = _chunk.Cells
+                    .Where(x =>
+                        x.InnerPart == InnerPart.None
+                        && x.State == BuildingState.Finished
+                        && x.Z == lowestLevelZ);
+                var deadEnds = allEmptyCellsFromLastLevel
+                    .Where(cell => GetNearCellsSameLevel(cell)
+                        .Where(nearCell => nearCell != null)
+                        .Count() == 1)
+                    .ToList();
+                if (deadEnds.Any())
+                {
+                    endCell = _random.GetRandomFrom(deadEnds);
+                }
+                else
+                {
+                    // Maybe we haven't deadends.
+                    // Then build exist on random cell on the last floor
+                    endCell = _random.GetRandomFrom(allEmptyCellsFromLastLevel.ToList());
+                }
+            }
+
+            endCell.InnerPart = InnerPart.Exit;
+        }
+
+        private IEnumerable<CellForGeneration> GetNearCellsSameLevel(CellForGeneration centralCell)
+        {
+            if (centralCell.Wall.HasFlag(Wall.West))
+            {
+                yield return _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
+            }
+            if (centralCell.Wall.HasFlag(Wall.East))
+            {
+                yield return _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
+            }
+            if (centralCell.Wall.HasFlag(Wall.South))
+            {
+                yield return _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
+            }
+            if (centralCell.Wall.HasFlag(Wall.North))
+            {
+                yield return _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z];
+            }
+        }
+
     }
 }

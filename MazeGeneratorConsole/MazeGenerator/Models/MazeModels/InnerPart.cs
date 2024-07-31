@@ -4,21 +4,21 @@
     {
         None,
         /// <summary>
-        /// Y axe +1
+        /// Y: +1 Z: +1
         /// </summary>
-        StairFromSouthToNorth,
+        StairUpOnNorth,
         /// <summary>
-        /// Y axe -1
+        /// Y: -1 Z: +1
         /// </summary>
-        StairFromNorthToSouth,
+        StairUpOnSouth,
         /// <summary>
-        /// X axe +1
+        /// X: +1 Z: +1
         /// </summary>
-        StairFromWestToEast,
+        StairUpOnEast,
         /// <summary>
-        /// X axe -1
+        /// X: -1 Z: +1
         /// </summary>
-        StairFromEastToWest,
+        StairUpOnWest,
         
         Start,
         /// <summary>

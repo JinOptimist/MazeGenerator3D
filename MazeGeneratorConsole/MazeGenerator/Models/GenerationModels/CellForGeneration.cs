@@ -7,10 +7,10 @@ namespace MazeGenerator.Models.GenerationModels
     {
         public BuildingState State { get; set; }
         public bool IsStair
-            => InnerPart == InnerPart.StairFromSouthToNorth
-            || InnerPart == InnerPart.StairFromNorthToSouth
-            || InnerPart == InnerPart.StairFromWestToEast
-            || InnerPart == InnerPart.StairFromEastToWest;
+            => InnerPart == InnerPart.StairUpOnNorth
+            || InnerPart == InnerPart.StairUpOnSouth
+            || InnerPart == InnerPart.StairUpOnEast
+            || InnerPart == InnerPart.StairUpOnWest;
 
         public static Vector3 operator -(CellForGeneration cell1, CellForGeneration cell2)
         {

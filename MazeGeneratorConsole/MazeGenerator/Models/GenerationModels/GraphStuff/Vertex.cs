@@ -1,6 +1,7 @@
 ﻿using MazeGenerator.Models.MazeModels;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MazeGenerator.Models.GenerationModels.GraphStuff
 {
@@ -52,7 +53,7 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
             {
                 Graph.Edges.Remove(edge);
             }
-            
+
             _possibleExitSteps.Clear();
         }
 
@@ -62,16 +63,31 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
             Graph.Edges.Add(edge);
         }
 
-        internal void RemovePossibleExitSteps(Edge edge)
+        public void RemovePossibleExitSteps(Edge edge)
         {
             _possibleExitSteps.Remove(edge);
             Graph.Edges.Remove(edge);
         }
 
-        internal void AddRangePossibleExitSteps(IEnumerable<Edge> edges)
+        public void AddRangePossibleExitSteps(IEnumerable<Edge> edges)
         {
             _possibleExitSteps.AddRange(edges);
             Graph.Edges.AddRange(edges);
+        }
+
+        public void FilterPossibleStep()
+        {
+            var unavailableStep = _possibleExitSteps
+                .Where(edge => edge.To.State != BuildingState.New
+                    || (
+                        edge.Direction.Z != 0
+                        && Graph.GetMiddleVertex(edge).State != BuildingState.New
+                    ))
+                .ToList();
+            foreach (var edge in unavailableStep)
+            {
+                RemovePossibleExitSteps(edge);
+            }
         }
 
         public Vertex(Graph graph, CellForGeneration cell)

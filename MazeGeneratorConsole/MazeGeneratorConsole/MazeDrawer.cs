@@ -1,4 +1,5 @@
-﻿using MazeGenerator.Models.MazeModels;
+﻿using MazeGenerator.Models.GenerationModels;
+using MazeGenerator.Models.MazeModels;
 
 namespace MazeGeneratorConsole
 {
@@ -18,6 +19,8 @@ namespace MazeGeneratorConsole
 
         public void ClearDraw(Maze maze)
         {
+            Console.Clear();
+
             var rowsDrawedPrevChunk = 0;
             var drawedLevels = 0;
             for (int chunkIndex = 0; chunkIndex < maze.Chunks.Count; chunkIndex++)
@@ -27,6 +30,12 @@ namespace MazeGeneratorConsole
                 drawedLevels += chunk.Height;
             }
             Console.WriteLine($"Seed: {maze.Seed}");
+        }
+
+        public void TestDrawChunk(Chunk chunk)
+        {
+            Console.Clear();
+            ChunkDraw(chunk, 0, 0, 0);
         }
 
         private int ChunkDraw(Chunk chunk, int rowsDrawedPrevChunks, int chunkIndex, int drawedLevels)
@@ -58,7 +67,7 @@ namespace MazeGeneratorConsole
                 $"Full Lvl - {drawedLevels + magicLevelCountingHACK}");
 
             //Draw upper border
-            for (int x = 0; x < chunk.Length * 2; x++)
+            for (int x = 0; x < chunk.Length * 2 + 1; x++)
             {
                 var yMargin = MARGIN - 1 + levelMargin;
                 Console.SetCursorPosition(MARGIN + x, yMargin);
@@ -91,10 +100,10 @@ namespace MazeGeneratorConsole
                     {
                         switch (cell.InnerPart)
                         {
-                            case InnerPart.StairFromSouthToNorth:
-                            case InnerPart.StairFromNorthToSouth:
-                            case InnerPart.StairFromWestToEast:
-                            case InnerPart.StairFromEastToWest:
+                            case InnerPart.StairUpOnNorth:
+                            case InnerPart.StairUpOnSouth:
+                            case InnerPart.StairUpOnEast:
+                            case InnerPart.StairUpOnWest:
                                 Console.Write(STAIR);
                                 break;
                             case InnerPart.Start:

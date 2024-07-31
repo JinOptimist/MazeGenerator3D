@@ -1,14 +1,12 @@
-﻿using MazeGenerator.Generators;
-using MazeGenerator.Models.GenerationModels;
+﻿using MazeGenerator.Models.GenerationModels;
 using MazeGenerator.Models.GenerationModels.GraphStuff;
 using MazeGenerator.Models.MazeModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 
-namespace MazeGenerator
+namespace MazeGenerator.Generators
 {
     public class GeneratorBaseOnGraph : BaseGenerator
     {
@@ -28,6 +26,14 @@ namespace MazeGenerator
             var currentVertex = _graph.Root;
             while (currentVertex != null)
             {
+                if (_debugDrawer != null)
+                {
+                    var chunk = MapToChunk(_chunk);
+                    _debugDrawer(chunk);
+                    // Console.ReadLine();
+                }
+                currentVertex.FilterPossibleStep();
+
                 if (currentVertex.GetPossibleExitSteps.Any())
                 {
                     currentVertex.State = BuildingState.Visited;
@@ -63,7 +69,7 @@ namespace MazeGenerator
                         currentVertex.RemovePossibleExitSteps(stepToMiddle);
                     }
 
-                    var stair = ChooseStairByVector(edgeToStep.Direction);
+                    var stair = ChooseStairByVectorV2ForGraph(edgeToStep.Direction);
                     if (edgeToStep.Direction.Z == 1)
                     {
                         middleVertext.Cell.InnerPart = stair;
@@ -72,7 +78,7 @@ namespace MazeGenerator
                     {
                         edgeToStep.To.Cell.InnerPart = stair;
                     }
-                    
+
                     UpdatePossibleEdges(edgeToStep);
                 }
 
@@ -147,17 +153,39 @@ namespace MazeGenerator
                     })
                     .Where(x => x.InnerPart == InnerPart.None);
                 var edges = possibleStepVertices.Select(x => new Edge(vertex, x));
+
+                edges = edges.Where(edge =>
+                {
+                    if (edge.Direction.Z == 0)
+                    {
+                        return true;
+                    }
+
+                    // if we try build stair to end of the maze, remove this edge
+                    var lastX = _chunk.Length - 1;
+                    var lastY = _chunk.Width - 1;
+                    if (edge.Direction.X == 1 && edge.To.X == lastX)
+                    {
+                        return false;
+                    }
+                    if (edge.Direction.X == -1 && edge.To.X == 0)
+                    {
+                        return false;
+                    }
+                    if (edge.Direction.Y == 1 && edge.To.Y == lastY)
+                    {
+                        return false;
+                    }
+                    if (edge.Direction.Y == -1 && edge.To.X == 0)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                });
+
                 vertex.AddRangePossibleExitSteps(edges);
             }
-        }
-
-        protected override void BuildExit(Vector2? endPoint)
-        {
-            var emptyCells = _chunk.Cells
-                .Where(x => x.InnerPart == InnerPart.None)
-                .ToList();
-            var randomCell = _random.GetRandomFrom(emptyCells);
-            randomCell.InnerPart = InnerPart.Exit;
         }
 
         private Vertex GetMiddleVertex(Edge edge)

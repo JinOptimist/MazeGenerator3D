@@ -44,9 +44,12 @@ namespace MazeGenerator.Models.GenerationModels.GraphStuff
             //Edges = Edges.Distinct().ToList();
         }
 
-        internal void AddRangeEdges(IEnumerable<Edge> edges)
+        public void AddRangeEdges(IEnumerable<Edge> edges)
         {
             Edges.AddRange(edges);
         }
+
+        public Vertex GetMiddleVertex(Edge edge)
+            => this[edge.To.X, edge.To.Y, edge.From.Z];
     }
 }

@@ -1,56 +1,16 @@
-﻿using MazeGenerator.Generators;
-using MazeGenerator.Models.GenerationModels;
-using MazeGenerator.Models.MazeModels;
-using System;
+﻿using MazeGenerator.Models.GenerationModels;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using System.Security.Cryptography.X509Certificates;
 
-namespace MazeGenerator
+namespace MazeGenerator.Generators
 {
     public class Generator : BaseGenerator
     {
-        protected override void BuildExit(Vector2? endPoint)
-        {
-            var lowestLevelZ = 0;
-            CellForGeneration endCell;
-            if (endPoint.HasValue)
-            {
-                endCell = _chunk[endPoint.Value.X, endPoint.Value.Y, lowestLevelZ];
-            }
-            else
-            {
-                var allEmptyCellsFromLastLevel = _chunk.Cells
-                    .Where(x =>
-                        x.InnerPart == InnerPart.None
-                        && x.State == BuildingState.Finished
-                        && x.Z == lowestLevelZ);
-                var deadEnds = allEmptyCellsFromLastLevel
-                    .Where(cell => GetNearCellsSameLevel(cell)
-                        .Where(nearCell => nearCell != null)
-                        .Count() == 1)
-                    .ToList();
-                if (deadEnds.Any())
-                {
-                    endCell = _random.GetRandomFrom(deadEnds);
-                }
-                else
-                {
-                    // Maybe we haven't deadends.
-                    // Then build exist on random cell on the last floor
-                    endCell = _random.GetRandomFrom(allEmptyCellsFromLastLevel.ToList());
-                }
-            }
-
-            endCell.InnerPart = InnerPart.Exit;
-        }
-
         protected override void BuildCorridors()
         {
             var miner = new Miner();
-            
+
             var startingCell = _chunk.GetStartCell();
 
             miner.CurrentCell = startingCell;
@@ -270,25 +230,6 @@ namespace MazeGenerator
             }
         }
 
-        private IEnumerable<CellForGeneration> GetNearCellsSameLevel(CellForGeneration centralCell)
-        {
-            if (centralCell.Wall.HasFlag(Wall.West))
-            {
-                yield return _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
-            }
-            if (centralCell.Wall.HasFlag(Wall.East))
-            {
-                yield return _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
-            }
-            if (centralCell.Wall.HasFlag(Wall.South))
-            {
-                yield return _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
-            }
-            if (centralCell.Wall.HasFlag(Wall.North))
-            {
-                yield return _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z];
-            }
-        }
 
         private CellForGeneration? GetCellByDirection(CellForGeneration centralCell, Vector3 vector3)
             => _chunk[centralCell.X + vector3.X, centralCell.Y + vector3.Y, centralCell.Z + vector3.Z];
