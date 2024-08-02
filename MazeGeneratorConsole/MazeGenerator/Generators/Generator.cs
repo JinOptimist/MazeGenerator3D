@@ -117,7 +117,7 @@ namespace MazeGenerator.Generators
                     {
                         Option = cellOnTheLevelAbove,
                         Weight = _weightsForGeneration.
-                            CalculateWeightForStair(_chunk, cellOnTheLevelAbove)
+                            CalculateWeightForStair(_chunk, cellOnTheLevelAbove.Z)
                     };
                 }
 
@@ -128,7 +128,7 @@ namespace MazeGenerator.Generators
                     {
                         Option = cellOnTheLevelBelow,
                         Weight = _weightsForGeneration.
-                            CalculateWeightForStair(_chunk, cellOnTheLevelBelow)
+                            CalculateWeightForStair(_chunk, cellOnTheLevelBelow.Z)
                     };
                 }
             }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 
 namespace MazeGenerator.Generators
 {
@@ -133,9 +134,18 @@ namespace MazeGenerator.Generators
             BuildFullWalls();
             BuildStart(config.StartPoint);
             BuildCorridors();
+            UpdateNeighborsCount();
             BuildExit(config.EndPoint);
 
             return MapToChunk(_chunk);
+        }
+
+        private void UpdateNeighborsCount()
+        {
+            _chunk
+                .Cells
+                .ForEach(c => c.NeighborsCount = 
+                    GetNearCellsSameLevel(c).Count());
         }
 
         private void BuildStart(Vector2? startPoint)
@@ -342,6 +352,7 @@ namespace MazeGenerator.Generators
                         Z = x.Z,
                         Wall = x.Wall,
                         InnerPart = x.InnerPart,
+                        NeighborsCount = x.NeighborsCount,
                     })
                 .ToList()
             };
@@ -362,9 +373,7 @@ namespace MazeGenerator.Generators
                         && x.State == BuildingState.Finished
                         && x.Z == lowestLevelZ);
                 var deadEnds = allEmptyCellsFromLastLevel
-                    .Where(cell => GetNearCellsSameLevel(cell)
-                        .Where(nearCell => nearCell != null)
-                        .Count() == 1)
+                    .Where(cell => cell.NeighborsCount == 1)
                     .ToList();
                 if (deadEnds.Any())
                 {
@@ -383,23 +392,38 @@ namespace MazeGenerator.Generators
 
         private IEnumerable<CellForGeneration> GetNearCellsSameLevel(CellForGeneration centralCell)
         {
-            if (centralCell.Wall.HasFlag(Wall.West))
+            if (!centralCell.Wall.HasFlag(Wall.West))
             {
-                yield return _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
+                var west = _chunk[centralCell.X - 1, centralCell.Y, centralCell.Z];
+                if (west != null)
+                {
+                    yield return west;
+                }
             }
-            if (centralCell.Wall.HasFlag(Wall.East))
+            if (!centralCell.Wall.HasFlag(Wall.East))
             {
-                yield return _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
+                var east = _chunk[centralCell.X + 1, centralCell.Y, centralCell.Z];
+                if (east != null)
+                {
+                    yield return east;
+                }
             }
-            if (centralCell.Wall.HasFlag(Wall.South))
+            if (!centralCell.Wall.HasFlag(Wall.South))
             {
-                yield return _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
+                var south = _chunk[centralCell.X, centralCell.Y - 1, centralCell.Z];
+                if (south != null)
+                {
+                    yield return south;
+                }
             }
-            if (centralCell.Wall.HasFlag(Wall.North))
+            if (!centralCell.Wall.HasFlag(Wall.North))
             {
-                yield return _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z];
+                var notrh = _chunk[centralCell.X, centralCell.Y + 1, centralCell.Z]; ;
+                if (notrh != null)
+                {
+                    yield return notrh;
+                }
             }
         }
-
     }
 }

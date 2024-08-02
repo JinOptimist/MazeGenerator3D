@@ -23,6 +23,7 @@ namespace MazeGenerator.Generators
             var root = _graph.Vertices.First(x => x.InnerPart == InnerPart.Start);
             _graph.Root = root;
 
+            var lastStepDirection = new Vector3();
             var currentVertex = _graph.Root;
             while (currentVertex != null)
             {
@@ -54,7 +55,12 @@ namespace MazeGenerator.Generators
                     continue;
                 }
 
-                var edgeToStep = _random.GetRandomFrom(currentVertex.GetPossibleExitSteps);
+                //currentVertex.GetPossibleExitSteps
+                var possibleStepsWithWeight = 
+                    BuildPossibleStepsWithWeight(currentVertex, lastStepDirection)
+                    .ToList();
+                var edgeToStep = _random.GetRandomFromByWeight(possibleStepsWithWeight);
+                // var edgeToStep = _random.GetRandomFrom(currentVertex.GetPossibleExitSteps);
                 RemoveEdgesToTheVertext(edgeToStep.To);
                 RemoveWall(edgeToStep);
                 if (edgeToStep.Direction.Z != 0)
@@ -83,6 +89,33 @@ namespace MazeGenerator.Generators
                 }
 
                 currentVertex = edgeToStep.To;
+                lastStepDirection = edgeToStep.Direction;
+            }
+        }
+
+        private IEnumerable<OptionWithWeight<Edge>> BuildPossibleStepsWithWeight(Vertex currentVertex, Vector3 lastStepDirection)
+        {
+            foreach (var edge in currentVertex.GetPossibleExitSteps)
+            {
+                if (edge.Direction.Z == 0)
+                {
+                    yield return new OptionWithWeight<Edge>
+                    {
+                        Option = edge,
+                        Weight = _weightsForGeneration
+                        .CalculateWeightForStep(edge.Direction, lastStepDirection)
+                    };
+                }
+                else
+                {
+                    var zOfTheLevel = (int)(edge.Direction.Z + edge.Direction.Z);
+                    yield return new OptionWithWeight<Edge>
+                    {
+                        Option = edge,
+                        Weight = _weightsForGeneration.
+                            CalculateWeightForStair(_chunk, zOfTheLevel)
+                    };
+                }
             }
         }
 
@@ -206,31 +239,6 @@ namespace MazeGenerator.Generators
 
         private Vertex GetMiddleVertex(Edge edge)
             => _graph[edge.To.X, edge.To.Y, edge.From.Z];
-
-        private IEnumerable<Vertex> GetNearestVerticesOnTheSameLevel(Vertex centralVertex)
-        {
-            var westVertex = _graph[centralVertex.X - 1, centralVertex.Y, centralVertex.Z];
-            if (westVertex != null)
-            {
-                yield return westVertex;
-            }
-            var eastVertex = _graph[centralVertex.X + 1, centralVertex.Y, centralVertex.Z];
-            if (eastVertex != null)
-            {
-                yield return eastVertex;
-            }
-
-            var southVertex = _graph[centralVertex.X, centralVertex.Y - 1, centralVertex.Z];
-            if (southVertex != null)
-            {
-                yield return southVertex;
-            }
-            var northVertex = _graph[centralVertex.X, centralVertex.Y + 1, centralVertex.Z];
-            if (northVertex != null)
-            {
-                yield return northVertex;
-            }
-        }
 
         private Vertex? GetCellByDirection(Vertex vertex, Vector3 vector)
             => _graph[vertex.X + vector.X, vertex.Y + vector.Y, vertex.Z + vector.Z];

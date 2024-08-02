@@ -47,19 +47,19 @@ namespace MazeGenerator.Models.GenerationModels
                 ? StepForwardWeight
                 : StepRandomWeight;
 
-        public double CalculateWeightForStair(ChunkForGeneration maze, CellForGeneration cell)
+        public double CalculateWeightForStair(ChunkForGeneration maze, int zOfTheLevel)
         {
-            var countOfStairsOnTheFloor = maze.Cells.Count(c => c.Z == cell.Z && c.IsStair);
-            return countOfStairsOnTheFloor == 1
+            var countOfStairsOnTheFloor = maze.Cells.Count(c => c.Z == zOfTheLevel && c.IsStair);
+            return countOfStairsOnTheFloor == 0
                 ? StairFirstWeight
                 : Math.Pow(StairNotFirstWeight, countOfStairsOnTheFloor);
         }
 
         public static GenerationWeights FullRandom()
-            => new GenerationWeights(1, 1, 1, 1);
+            => new GenerationWeights(2, 1, 1, 1);
 
         public static GenerationWeights GenericBuilding()
-            => new GenerationWeights(10, .1, 100, 1);
+            => new GenerationWeights(200, .1, 100, 1);
 
         public static GenerationWeights StairsEveryWhere()
             => new GenerationWeights(100, 1, 1, .1);

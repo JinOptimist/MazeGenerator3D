@@ -10,6 +10,8 @@
 
         public InnerPart InnerPart { get; set; }
 
+        public int NeighborsCount {  get; set; } = 0;
+
         public override string ToString()
         {
             return $"[{X}, {Y}, {Z}]: {InnerPart}";
