@@ -79,14 +79,20 @@ namespace MazeGenerator.Generators
                         edgeToStep.To.Cell.InnerPart = stair;
                     }
 
-                    UpdatePossibleEdges(edgeToStep);
+                    UpdatePossibleEdgesForStair(edgeToStep);
                 }
 
                 currentVertex = edgeToStep.To;
             }
         }
 
-        private void UpdatePossibleEdges(Edge edgeToStep)
+        private void BuildBigRoom(int size)
+        {
+            var x = _random.Next(0, _chunk.Length - size - 1);
+            var y = _random.Next(0, _chunk.Width - size - 1);
+        }
+
+        private void UpdatePossibleEdgesForStair(Edge edgeToStep)
         {
             var vertexAfterStep = edgeToStep.To;
             vertexAfterStep.ClearPossibleExitSteps();
@@ -96,7 +102,11 @@ namespace MazeGenerator.Generators
                 && nextStairInTheSameDirection.InnerPart == InnerPart.None
                 && nextStairInTheSameDirection.State == BuildingState.New)
             {
-                vertexAfterStep.AddPossibleExitSteps(new Edge(vertexAfterStep, nextStairInTheSameDirection));
+                var edge = new Edge(vertexAfterStep, nextStairInTheSameDirection);
+                if (IsEdgeAllowed(edge))
+                {
+                    vertexAfterStep.AddPossibleExitSteps(edge);
+                }
             }
 
             var vectorToTheSameDirectioButOnTheSameLevel = new Vector3(
@@ -108,7 +118,11 @@ namespace MazeGenerator.Generators
                 && cellOnTheSameDirectioButOnTheSameLevel.InnerPart == InnerPart.None
                 && cellOnTheSameDirectioButOnTheSameLevel.State == BuildingState.New)
             {
-                vertexAfterStep.AddPossibleExitSteps(new Edge(vertexAfterStep, cellOnTheSameDirectioButOnTheSameLevel));
+                var edge = new Edge(vertexAfterStep, cellOnTheSameDirectioButOnTheSameLevel);
+                if (IsEdgeAllowed(edge))
+                {
+                    vertexAfterStep.AddPossibleExitSteps(edge);
+                }
             }
         }
 
@@ -154,38 +168,40 @@ namespace MazeGenerator.Generators
                     .Where(x => x.InnerPart == InnerPart.None);
                 var edges = possibleStepVertices.Select(x => new Edge(vertex, x));
 
-                edges = edges.Where(edge =>
-                {
-                    if (edge.Direction.Z == 0)
-                    {
-                        return true;
-                    }
-
-                    // if we try build stair to end of the maze, remove this edge
-                    var lastX = _chunk.Length - 1;
-                    var lastY = _chunk.Width - 1;
-                    if (edge.Direction.X == 1 && edge.To.X == lastX)
-                    {
-                        return false;
-                    }
-                    if (edge.Direction.X == -1 && edge.To.X == 0)
-                    {
-                        return false;
-                    }
-                    if (edge.Direction.Y == 1 && edge.To.Y == lastY)
-                    {
-                        return false;
-                    }
-                    if (edge.Direction.Y == -1 && edge.To.X == 0)
-                    {
-                        return false;
-                    }
-
-                    return true;
-                });
+                edges = edges.Where(IsEdgeAllowed);
 
                 vertex.AddRangePossibleExitSteps(edges);
             }
+        }
+
+        private bool IsEdgeAllowed(Edge edge)
+        {
+            if (edge.Direction.Z == 0)
+            {
+                return true;
+            }
+
+            // if we try build stair to end of the maze, remove this edge
+            var lastX = _chunk.Length - 1;
+            var lastY = _chunk.Width - 1;
+            if (edge.Direction.X == 1 && edge.To.X == lastX)
+            {
+                return false;
+            }
+            if (edge.Direction.X == -1 && edge.To.X == 0)
+            {
+                return false;
+            }
+            if (edge.Direction.Y == 1 && edge.To.Y == lastY)
+            {
+                return false;
+            }
+            if (edge.Direction.Y == -1 && edge.To.X == 0)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private Vertex GetMiddleVertex(Edge edge)
